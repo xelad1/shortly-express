@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var session = require('express-session');
 
 
 var db = require('./app/config');
@@ -21,26 +22,65 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true
+}));
 
 
-app.get('/', 
-function(req, res) {
+app.get('/',restrict, function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
-function(req, res) {
+app.get('/create',restrict,function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
-function(req, res) {
+app.get('/links', restrict, function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links', 
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
+
+app.get('/signup',
+  function(req, res) {
+    res.render('signup');
+  });
+
+app.post('/signin', function(req, res) {
+
+})
+
+app.post('/signup', function(req, res) {
+
+  var userName = req.body.username;
+  var passWord = req.body.password;
+
+  //write check
+
+    // if(found){
+    //   res.send(200, found.attributes)
+    // }
+
+    var user = new User({
+      username: userName,
+      password: passWord
+    });
+
+    user.save().then(function(newUser) {
+      Users.add(newUser);
+      res.send(200, newUser);
+    });
+  });
+
+
+app.post('/links',
 function(req, res) {
   var uri = req.body.url;
 
@@ -77,7 +117,14 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
-
+function restrict(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+};
 
 
 /************************************************************/
